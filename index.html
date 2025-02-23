@@ -1,287 +1,401 @@
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Face Match</title>
-      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-      <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        html, body {
-          width: 100%;
-          min-height: 100vh;
-          overflow-x: hidden;
-          font-family: 'Poppins', sans-serif;
-          background: linear-gradient(135deg, #0d0d0d, #1a1a1a);
-          padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
-        }
-
-        .outer-container {
-          display: flex;
-          flex-direction: column;
-          gap: 30px;
-          width: 100%;
-          max-width: 1200px;
-          margin: auto;
-          min-height: calc(100vh - 40px);
-        }
-
-        .capture-container {
-          background: rgba(255,255,255,0.05);
-          backdrop-filter: blur(10px);
-          border-radius: 20px;
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-          transition: transform 0.3s ease;
-          border: 3px solid white;
-        }
-        .capture-container:hover { transform: translateY(-5px); }
-        .capture-container .header {
-          font-size: 32px;
-          font-weight: 700;
-          color: #ddd;
-          margin-bottom: 20px;
-          text-transform: lowercase;
-          text-shadow: 0 0 5px rgba(255,255,255,0.2);
-          text-align: center;
-        }
-        .camera-container {
-          width: 100%;
-          max-width: 360px;
-          aspect-ratio: 3 / 4;
-          background: #000;
-          border: 3px solid #fff;
-          border-radius: 10px;
-          overflow: hidden;
-          margin-bottom: 20px;
-          box-shadow: 0 0 15px rgba(255,255,255,0.3);
-        }
-        .camera-container video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .email-container {
-          margin-top: 20px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          width: 100%;
-          justify-content: center;
-        }
-        #email {
-          padding: 10px;
-          border-radius: 8px;
-          font-size: 16px;
-          width: 85%;
-          max-width: 300px;
-        }
-        #new {
-          padding: 12px;
-          background: lightblue;
-          color: #000;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 18px;
-          font-weight: 600;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          box-shadow: 0 0 10px rgba(173, 216, 230, 0.6);
-          height: 100%;
-        }
-        #new:hover { transform: translateY(-3px); box-shadow: 0 0 15px rgba(173, 216, 230, 0.8); }
-        .action-btns {
-          display: flex;
-          gap: 20px;
-          margin-top: 20px;
-          width: 100%;
-          justify-content: center;
-        }
-        .action-btns button {
-          padding: 12px 25px;
-          background: #00ff00;
-          color: #000;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 18px;
-          font-weight: 600;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          box-shadow: 0 0 10px rgba(255,255,255,0.3);
-        }
-        .action-btns button:hover { transform: translateY(-3px); box-shadow: 0 0 15px rgba(255,255,255,0.5); }
-        #register.disabled, #match.disabled {
-          background: #d3d3d3;
-          cursor: not-allowed;
-        }
-
-        /* Neon black and white effect with subtle glow */
-        .capture-container, #new, .action-btns button {
-          box-shadow: 0 0 8px 2px white, 0 0 16px 4px rgba(255, 255, 255, 0.2);
-          transition: box-shadow 0.3s ease, transform 0.3s ease;
-        }
-        .capture-container:hover, #new:hover, .action-btns button:hover {
-          box-shadow: 0 0 16px 4px white, 0 0 24px 6px rgba(255, 255, 255, 0.3);
-        }
-        .capture-container.match { box-shadow: 0 0 8px 2px green, 0 0 16px 4px rgba(0, 255, 0, 0.2); }
-        .capture-container.no-match { box-shadow: 0 0 8px 2px red, 0 0 16px 4px rgba(255, 0, 0, 0.2); }
-        #match.match { box-shadow: 0 0 8px 2px green, 0 0 16px 4px rgba(0, 255, 0, 0.2); }
-        #match.no-match { box-shadow: 0 0 8px 2px red, 0 0 16px 4px rgba(255, 0, 0, 0.2); }
-
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-          .outer-container {
-            gap: 20px;
-          }
-          .email-container {
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-          }
-          #email, #new {
-            width: 80%;
-          }
-          .action-btns {
-            flex-direction: column;
-            gap: 10px;
-          }
-          .action-btns button {
-            width: 80%;
-            font-size: 16px;
-            padding: 10px 20px;
-          }
-          .capture-container {
-            padding: 15px;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="outer-container">
-        <section class="capture-container">
-          <div class="header">Face Match</div>
-          <div class="camera-container">
-            <video id="video" autoplay></video>
-          </div>
-
-          <div class="email-container">
-            <input type="text" id="email" placeholder="Enter your email" />
-            <button id="new">New</button>
-          </div>
-
-          <div class="action-btns">
-            <button id="match" class="disabled" disabled>Match</button>
-            <button id="register" class="disabled" disabled>Register</button>
-          </div>
-
-          <p id="result"></p>
-        </section>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check Your Liveness</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Base Reset & Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #0d0d0d, #1a1a1a);
+      padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+    }
+    
+    /* Outer Container */
+    .outer-container {
+      display: flex;
+      gap: 60px;
+      width: 100%;
+      max-width: 1200px;
+      margin: auto;
+      min-height: calc(100vh - 40px);
+    }
+    
+    /* Capture Container */
+    .capture-container {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+      transition: transform 0.3s ease;
+    }
+    .capture-container:hover { transform: translateY(-5px); }
+    .capture-container .header {
+      font-size: 32px;
+      font-weight: 700;
+      color: #ddd;
+      margin-bottom: 20px;
+      text-transform: lowercase;
+      text-shadow: 0 0 10px rgba(255,255,255,0.3);
+      text-align: center;
+    }
+    .camera-container {
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 3 / 4;
+      background: #000;
+      border: 3px solid #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: 0 0 20px rgba(255,255,255,0.3);
+      /* Make room for the overlay */
+      position: relative;
+    }
+    .camera-container video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #capture {
+      padding: 15px 30px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 600;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 0 10px #fff;
+    }
+    #capture:hover { transform: translateY(-3px); box-shadow: 0 0 20px #fff; }
+    #result {
+      margin-top: 20px;
+      font-size: 20px;
+      color: #fff;
+      font-weight: 600;
+      text-shadow: 0 0 8px #fff;
+      text-align: center;
+    }
+    
+    /* New User Registration Styles */
+    .new-user-btn {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 2;
+      box-shadow: 0 0 10px #fff;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .new-user-btn:hover {
+      transform: translateX(-50%) translateY(-3px);
+      box-shadow: 0 0 20px #fff;
+    }
+    #registrationForm {
+      margin-top: 10px;
+      display: none;
+      text-align: center;
+    }
+    #registrationForm input {
+      padding: 10px;
+      width: 80%;
+      max-width: 300px;
+      border: 2px solid #fff;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    #registrationForm button {
+      padding: 10px 20px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 0 10px #fff;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    #registrationForm button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 20px #fff;
+    }
+    
+    /* History Container */
+    .history-container {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+      transition: transform 0.3s ease;
+    }
+    .history-container:hover { transform: translateY(-5px); }
+    .history-container .header {
+      font-size: 28px;
+      font-weight: 700;
+      color: #ddd;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(255,255,255,0.3);
+      text-align: center;
+    }
+    .history-list {
+      width: 100%;
+      max-height: 75vh;
+      overflow-y: auto;
+      padding: 0 10px;
+      margin-bottom: 20px;
+    }
+    .history-item {
+      display: flex;
+      align-items: center;
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border: 2px solid transparent;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .history-item:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 15px rgba(255,255,255,0.3);
+    }
+    .history-item img {
+      width: 60px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 5px;
+      margin-right: 15px;
+      box-shadow: 0 0 10px #fff;
+    }
+    .history-item p {
+      font-size: 18px;
+      color: #ccc;
+      font-weight: 600;
+    }
+    .green-border {
+      border-color: #00ff00;
+      box-shadow: 0 0 10px #00ff00;
+    }
+    .red-border {
+      border-color: #ff0000;
+      box-shadow: 0 0 10px #ff0000;
+    }
+    #clearHistory {
+      padding: 15px;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 0 10px #fff;
+    }
+    #clearHistory:hover { transform: translateY(-3px); box-shadow: 0 0 20px #fff; }
+    
+    .history-list::-webkit-scrollbar { width: 8px; }
+    .history-list::-webkit-scrollbar-track { background: #121212; border-radius: 10px; }
+    .history-list::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    
+    @media (max-width: 768px) {
+      .outer-container {
+        flex-direction: column;
+        gap: 20px;
+      }
+      .capture-container, .history-container {
+        width: 100%;
+      }
+      .capture-container .header {
+        font-size: 28px;
+      }
+      .history-container .header {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="outer-container">
+    <section class="capture-container">
+      <div class="header">check your liveness</div>
+      <div class="camera-container">
+        <video id="video" autoplay></video>
+        <!-- New User button overlay on the camera frame -->
+        <button id="newUserBtn" class="new-user-btn">New User</button>
       </div>
-
-      <canvas id="canvas" width="360" height="480" style="display: none;"></canvas>
-
-      <script>
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        const resultText = document.getElementById("result");
-        const emailInput = document.getElementById("email");
-        const newUserBtn = document.getElementById("new");
-        const registerBtn = document.getElementById("register");
-        const matchBtn = document.getElementById("match");
-        const captureContainer = document.querySelector(".capture-container");
-        let imageData = null;
-
-        // Access the webcam stream
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(stream => { video.srcObject = stream; })
-          .catch(err => { console.error("Error accessing webcam:", err); });
-
-        // New button logic
-        let isNewUser = false;
-        newUserBtn.addEventListener("click", () => {
-          isNewUser = true;
-          registerBtn.classList.remove("disabled");
-          matchBtn.classList.add("disabled");
-          registerBtn.disabled = false;
-          matchBtn.disabled = true;
-        });
-
-        function captureImage() {
-          const context = canvas.getContext("2d");
-          context.drawImage(video, 0, 0, canvas.width, canvas.height);
-          canvas.toBlob(blob => {
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = () => {
-              imageData = reader.result.split(",")[1];
-            };
-          }, "image/jpeg");
-        }
-
-        // Register button logic
-        registerBtn.addEventListener("click", () => {
-          if (!emailInput.value || !imageData) {
-            resultText.innerText = "Please enter email and capture image.";
-            return;
-          }
-          captureImage();
+      <!-- Registration form (hidden by default) -->
+      <div id="registrationForm">
+        <input type="email" id="emailInput" placeholder="Enter your email" required />
+        <br/>
+        <button id="registerBtn">Register</button>
+      </div>
+      <button id="capture">Capture & Verify</button>
+      <p id="result"></p>
+    </section>
+    <section class="history-container">
+      <div class="header">Results</div>
+      <div class="history-list" id="history"></div>
+      <button id="clearHistory">Clear History</button>
+    </section>
+  </div>
+  <canvas id="canvas" width="360" height="480" style="display: none;"></canvas>
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const captureBtn = document.getElementById("capture");
+    const resultText = document.getElementById("result");
+    const historyContainer = document.getElementById("history");
+    const clearHistoryBtn = document.getElementById("clearHistory");
+    let history = JSON.parse(localStorage.getItem("captureHistory")) || [];
+    
+    // Registration elements
+    const newUserBtn = document.getElementById("newUserBtn");
+    const registrationForm = document.getElementById("registrationForm");
+    const emailInput = document.getElementById("emailInput");
+    const registerBtn = document.getElementById("registerBtn");
+    
+    // Access the webcam stream
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => { console.error("Error accessing webcam:", err); });
+      
+    // Liveness check capture
+    captureBtn.addEventListener("click", () => {
+      const context = canvas.getContext("2d");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          const dataUrl = reader.result;
+          const base64Data = dataUrl.split(",")[1];
+          fetch("https://zl77aqpwm5yvlrocwtw4c5nc7y0xxkco.lambda-url.ap-south-1.on.aws", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: base64Data })
+          })
+          .then(response => response.json())
+          .then(data => {
+            resultText.innerText = `Liveness: ${data.label}, Confidence: ${data.confidence.toFixed(2)}`;
+            addToHistory(blob, data);
+          })
+          .catch(error => { console.error("Error:", error); });
+        };
+      }, "image/jpeg");
+    });
+    
+    // Registration capture
+    registerBtn.addEventListener("click", () => {
+      const email = emailInput.value.trim();
+      if(!email) {
+        alert("Please enter a valid email address.");
+        return;
+      }
+      const context = canvas.getContext("2d");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          const dataUrl = reader.result;
+          const base64Data = dataUrl.split(",")[1];
           fetch("https://zjaxli24s5wu5anukwvvodgtoy0vckbn.lambda-url.ap-south-1.on.aws/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              email: emailInput.value,
-              image: imageData,
+              email: email,
+              image: base64Data,
               registration: true
             })
           })
           .then(response => response.json())
           .then(data => {
-            resultText.innerText = data.message;
+            resultText.innerText = `Registration: ${data.message || "Success"}`;
+            emailInput.value = "";
+            registrationForm.style.display = "none";
           })
           .catch(error => { console.error("Error:", error); });
+        };
+      }, "image/jpeg");
+    });
+    
+    // Toggle registration form visibility when New User is clicked
+    newUserBtn.addEventListener("click", () => {
+      registrationForm.style.display = (registrationForm.style.display === "none" || registrationForm.style.display === "") ? "block" : "none";
+    });
+    
+    function addToHistory(blob, data) {
+      if (history.length >= 10) history.shift();
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        history.push({
+          imgSrc: e.target.result,
+          result: `Liveness: ${data.label}, Confidence: ${data.confidence.toFixed(2)}`,
+          label: data.label
         });
-
-        // Match button logic
-        matchBtn.addEventListener("click", () => {
-          if (!emailInput.value || !imageData) {
-            resultText.innerText = "Please enter email and capture image.";
-            return;
-          }
-          captureImage();
-          fetch("https://zjaxli24s5wu5anukwvvodgtoy0vckbn.lambda-url.ap-south-1.on.aws/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: emailInput.value,
-              image: imageData,
-              registration: false
-            })
-          })
-          .then(response => response.json())
-          .then(data => {
-            resultText.innerText = data.message;
-            if (data.match) {
-              captureContainer.classList.add("match");
-              matchBtn.classList.add("match");
-              captureContainer.classList.remove("no-match");
-              matchBtn.classList.remove("no-match");
-            } else {
-              captureContainer.classList.add("no-match");
-              matchBtn.classList.add("no-match");
-              captureContainer.classList.remove("match");
-              matchBtn.classList.remove("match");
-            }
-          })
-          .catch(error => { console.error("Error:", error); });
-        });
-      </script>
-    </body>
-    </html>
+        localStorage.setItem("captureHistory", JSON.stringify(history));
+        updateHistoryUI();
+      };
+      reader.readAsDataURL(blob);
+    }
+    
+    function updateHistoryUI() {
+      historyContainer.innerHTML = "";
+      history.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.classList.add(item.label == 1 ? "green-border" : "red-border");
+        const img = document.createElement("img");
+        img.src = item.imgSrc;
+        const p = document.createElement("p");
+        p.innerText = item.result;
+        div.appendChild(img);
+        div.appendChild(p);
+        historyContainer.appendChild(div);
+      });
+    }
+    
+    clearHistoryBtn.addEventListener("click", () => {
+      history = [];
+      localStorage.removeItem("captureHistory");
+      updateHistoryUI();
+    });
+    
+    document.addEventListener("DOMContentLoaded", updateHistoryUI);
+  </script>
+</body>
+</html>
