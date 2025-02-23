@@ -65,7 +65,6 @@
       overflow: hidden;
       margin-bottom: 20px;
       box-shadow: 0 0 20px rgba(255,255,255,0.3);
-      /* Make room for the overlay */
       position: relative;
     }
     .camera-container video {
@@ -84,6 +83,7 @@
       font-weight: 600;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       box-shadow: 0 0 10px #fff;
+      margin-top: 10px;
     }
     #capture:hover { transform: translateY(-3px); box-shadow: 0 0 20px #fff; }
     #result {
@@ -93,9 +93,10 @@
       font-weight: 600;
       text-shadow: 0 0 8px #fff;
       text-align: center;
+      white-space: pre-line;
     }
     
-    /* New User Registration Styles */
+    /* New User Button & Email Field */
     .new-user-btn {
       position: absolute;
       top: 10px;
@@ -117,37 +118,23 @@
       transform: translateX(-50%) translateY(-3px);
       box-shadow: 0 0 20px #fff;
     }
-    #registrationForm {
-      margin-top: 10px;
-      display: none;
-      text-align: center;
+    .new-user-btn.active {
+      box-shadow: 0 0 15px #39FF14, 0 0 30px #39FF14;
     }
-    #registrationForm input {
+    .email-container {
+      margin-top: 10px;
+      text-align: center;
+      width: 100%;
+    }
+    .email-container input {
       padding: 10px;
       width: 80%;
       max-width: 300px;
       border: 2px solid #fff;
       border-radius: 8px;
       font-size: 16px;
-      margin-bottom: 10px;
       background: rgba(255,255,255,0.1);
       color: #fff;
-    }
-    #registrationForm button {
-      padding: 10px 20px;
-      background: #fff;
-      color: #000;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 0 10px #fff;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    #registrationForm button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 0 20px #fff;
     }
     
     /* History Container */
@@ -257,11 +244,9 @@
         <!-- New User button overlay on the camera frame -->
         <button id="newUserBtn" class="new-user-btn">New User</button>
       </div>
-      <!-- Registration form (hidden by default) -->
-      <div id="registrationForm">
-        <input type="email" id="emailInput" placeholder="Enter your email" required />
-        <br/>
-        <button id="registerBtn">Register</button>
+      <!-- Email field always visible -->
+      <div class="email-container">
+        <input type="email" id="emailInput" placeholder="Enter your email (must end with .nits.ac.in)" required pattern=".+@.+\.nits\.ac\.in" />
       </div>
       <button id="capture">Capture & Verify</button>
       <p id="result"></p>
@@ -280,50 +265,43 @@
     const resultText = document.getElementById("result");
     const historyContainer = document.getElementById("history");
     const clearHistoryBtn = document.getElementById("clearHistory");
+    const emailInput = document.getElementById("emailInput");
+    const newUserBtn = document.getElementById("newUserBtn");
     let history = JSON.parse(localStorage.getItem("captureHistory")) || [];
     
-    // Registration elements
-    const newUserBtn = document.getElementById("newUserBtn");
-    const registrationForm = document.getElementById("registrationForm");
-    const emailInput = document.getElementById("emailInput");
-    const registerBtn = document.getElementById("registerBtn");
+    // Endpoint URLs
+    const livenessUrl = "https://zl77aqpwm5yvlrocwtw4c5nc7y0xxkco.lambda-url.ap-south-1.on.aws";
+    const faceMatchUrl = "https://zjaxli24s5wu5anukwvvodgtoy0vckbn.lambda-url.ap-south-1.on.aws/";
+    
+    // Mode flag: false = verification mode, true = registration mode.
+    let isRegistrationMode = false;
+    
+    // Toggle registration mode when New User button is clicked
+    newUserBtn.addEventListener("click", () => {
+      isRegistrationMode = !isRegistrationMode;
+      if(isRegistrationMode) {
+        newUserBtn.classList.add("active");
+        captureBtn.innerText = "Capture & Register";
+      } else {
+        newUserBtn.classList.remove("active");
+        captureBtn.innerText = "Capture & Verify";
+      }
+    });
     
     // Access the webcam stream
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => { video.srcObject = stream; })
       .catch(err => { console.error("Error accessing webcam:", err); });
-      
-    // Liveness check capture
-    captureBtn.addEventListener("click", () => {
-      const context = canvas.getContext("2d");
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(blob => {
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = () => {
-          const dataUrl = reader.result;
-          const base64Data = dataUrl.split(",")[1];
-          fetch("https://zl77aqpwm5yvlrocwtw4c5nc7y0xxkco.lambda-url.ap-south-1.on.aws", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: base64Data })
-          })
-          .then(response => response.json())
-          .then(data => {
-            resultText.innerText = `Liveness: ${data.label}, Confidence: ${data.confidence.toFixed(2)}`;
-            addToHistory(blob, data);
-          })
-          .catch(error => { console.error("Error:", error); });
-        };
-      }, "image/jpeg");
-    });
     
-    // Registration capture
-    registerBtn.addEventListener("click", () => {
-      const email = emailInput.value.trim();
-      if(!email) {
-        alert("Please enter a valid email address.");
-        return;
+    captureBtn.addEventListener("click", () => {
+      // In registration mode, validate the email input
+      if(isRegistrationMode) {
+        const email = emailInput.value.trim();
+        const emailRegex = /@.*\.nits\.ac\.in$/i;
+        if (!emailRegex.test(email)) {
+          alert("Please enter a valid email ending with .nits.ac.in");
+          return;
+        }
       }
       const context = canvas.getContext("2d");
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -333,29 +311,53 @@
         reader.onloadend = () => {
           const dataUrl = reader.result;
           const base64Data = dataUrl.split(",")[1];
-          fetch("https://zjaxli24s5wu5anukwvvodgtoy0vckbn.lambda-url.ap-south-1.on.aws/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: email,
-              image: base64Data,
-              registration: true
+          
+          if(isRegistrationMode) {
+            // Registration flow: call faceMatchUrl with registration flag true and provided email
+            fetch(faceMatchUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: emailInput.value.trim(),
+                image: base64Data,
+                registration: true
+              })
             })
-          })
-          .then(response => response.json())
-          .then(data => {
-            resultText.innerText = `Registration: ${data.message || "Success"}`;
-            emailInput.value = "";
-            registrationForm.style.display = "none";
-          })
-          .catch(error => { console.error("Error:", error); });
+            .then(response => response.json())
+            .then(data => {
+              resultText.innerText = `Registration: ${data.message || "Success"}`;
+            })
+            .catch(error => { console.error("Error:", error); });
+          } else {
+            // Verification flow: call both endpoints concurrently
+            Promise.all([
+              fetch(livenessUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: base64Data })
+              }).then(res => res.json()),
+              fetch(faceMatchUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // Use the email field if valid; otherwise fallback to default
+                body: JSON.stringify({ 
+                  email: emailInput.value.trim() || "piyush21_ug@ei.nits.ac.in", 
+                  image: base64Data, 
+                  registration: false 
+                })
+              }).then(res => res.json())
+            ])
+            .then(([livenessData, faceMatchData]) => {
+              const combinedResult = 
+                `Liveness: ${livenessData.label}, Confidence: ${livenessData.confidence.toFixed(2)}\n` +
+                `Face Match: ${faceMatchData.face_match || faceMatchData.message || "N/A"}, Confidence: ${faceMatchData.confidence ? faceMatchData.confidence.toFixed(2) : "N/A"}`;
+              resultText.innerText = combinedResult;
+              addToHistory(blob, { label: livenessData.label, result: combinedResult });
+            })
+            .catch(error => { console.error("Error:", error); });
+          }
         };
       }, "image/jpeg");
-    });
-    
-    // Toggle registration form visibility when New User is clicked
-    newUserBtn.addEventListener("click", () => {
-      registrationForm.style.display = (registrationForm.style.display === "none" || registrationForm.style.display === "") ? "block" : "none";
     });
     
     function addToHistory(blob, data) {
@@ -364,7 +366,7 @@
       reader.onload = function(e) {
         history.push({
           imgSrc: e.target.result,
-          result: `Liveness: ${data.label}, Confidence: ${data.confidence.toFixed(2)}`,
+          result: data.result,
           label: data.label
         });
         localStorage.setItem("captureHistory", JSON.stringify(history));
