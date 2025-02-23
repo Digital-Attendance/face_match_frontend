@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Check Your Liveness</title>
+  <title>API Tester</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     /* Base Reset & Styles */
@@ -238,7 +238,7 @@
 <body>
   <div class="outer-container">
     <section class="capture-container">
-      <div class="header">check your liveness</div>
+      <div class="header">Match Your Face</div>
       <div class="camera-container">
         <video id="video" autoplay></video>
         <!-- New User button overlay on the camera frame -->
@@ -246,7 +246,7 @@
       </div>
       <!-- Email field always visible -->
       <div class="email-container">
-        <input type="email" id="emailInput" placeholder="Enter your email (must end with .nits.ac.in)" required pattern=".+@.+\.nits\.ac\.in" />
+        <input type="email" id="emailInput" placeholder="Email: .nits.ac.in" required pattern=".+@.+\.nits\.ac\.in" />
       </div>
       <button id="capture">Capture & Verify</button>
       <p id="result"></p>
@@ -270,7 +270,7 @@
     let history = JSON.parse(localStorage.getItem("captureHistory")) || [];
     
     // Endpoint URLs
-    const livenessUrl = "https://zl77aqpwm5yvlrocwtw4c5nc7y0xxkco.lambda-url.ap-south-1.on.aws";
+    const livenessUrl = "https://zl77aqpwm5yvlrocwtw4c5nc7y0xxkco.lambda-url.ap-south-1.on.aws/";
     const faceMatchUrl = "https://zjaxli24s5wu5anukwvvodgtoy0vckbn.lambda-url.ap-south-1.on.aws/";
     
     // Mode flag: false = verification mode, true = registration mode.
@@ -325,7 +325,7 @@
             })
             .then(response => response.json())
             .then(data => {
-              resultText.innerText = `Registration: ${data.message || "Success"}`;
+              resultText.innerText = `Registration: ${data.match || "Success"}`;
             })
             .catch(error => { console.error("Error:", error); });
           } else {
@@ -341,7 +341,7 @@
                 headers: { "Content-Type": "application/json" },
                 // Use the email field if valid; otherwise fallback to default
                 body: JSON.stringify({ 
-                  email: emailInput.value.trim() || "piyush21_ug@ei.nits.ac.in", 
+                  email: emailInput.value.trim(), 
                   image: base64Data, 
                   registration: false 
                 })
@@ -349,8 +349,8 @@
             ])
             .then(([livenessData, faceMatchData]) => {
               const combinedResult = 
-                `Liveness: ${livenessData.label}, Confidence: ${livenessData.confidence.toFixed(2)}\n` +
-                `Face Match: ${faceMatchData.face_match || faceMatchData.message || "N/A"}, Confidence: ${faceMatchData.confidence ? faceMatchData.confidence.toFixed(2) : "N/A"}`;
+                `Liveness: ${livenessData.label}` + `Confidence: ${livenessData.confidence.toFixed(2)}\n` +
+                `Face Match: ${faceMatchData.match}`;
               resultText.innerText = combinedResult;
               addToHistory(blob, { label: livenessData.label, result: combinedResult });
             })
