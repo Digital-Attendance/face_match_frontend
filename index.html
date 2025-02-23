@@ -349,7 +349,7 @@
             ])
             .then(([livenessData, faceMatchData]) => {
               const combinedResult = 
-                `Liveness: ${livenessData.label}` + `Confidence: ${livenessData.confidence.toFixed(2)}\n` +
+                `Liveness: ${livenessData.label}\n` + `Confidence: ${livenessData.confidence.toFixed(2)}\n` +
                 `Face Match: ${faceMatchData.match}`;
               resultText.innerText = combinedResult;
               addToHistory(blob, { label: livenessData.label, result: combinedResult });
